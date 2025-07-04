@@ -22,7 +22,7 @@ inputs:
   # 【关键】在这里直接配置环境变量
   environment:
     variables:
-      DASHSCOPE_API_KEY: ${env:DASHSCOPE_API_KEY}
+      DASHSCOPE_API_KEY: sk-0b05aceea35f4107a71e99fe012d1f00
   # API网关配置
   apigatewayConf:
     protocols:
