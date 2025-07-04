@@ -1,0 +1,30 @@
+# serverless.yml - 专为腾讯云命令行部署优化
+app: nongyunzhice-app
+stage: dev
+
+component: flask
+name: nongyunzhice-flask
+
+inputs:
+  src: ./
+  # 部署到广州地域
+  region: ap-guangzhou
+  # 【关键】强制指定使用 Python 3.9 版本
+  runtime: Python3.9
+  # 排除不需要上传的文件
+  exclude:
+    - .env
+    - .git/**
+    - .github/**
+    - node_modules/**
+    - __pycache__/**
+    - '*.pyc'
+  # 【关键】在这里直接配置环境变量
+  environment:
+    variables:
+      DASHSCOPE_API_KEY: ${env:DASHSCOPE_API_KEY}
+  # API网关配置
+  apigatewayConf:
+    protocols:
+      - http
+      - https
