@@ -3,6 +3,7 @@ import json
 import re
 import pandas as pd
 import dashscope
+import traceback
 from werkzeug.utils import secure_filename
 import time
 from http import HTTPStatus
@@ -41,17 +42,23 @@ except FileNotFoundError as e:
 
 # --- 3. AI模型调用与辅助函数 ---
 def call_text_model(prompt, model_name='qwen-plus', temperature=0.7):
-    """统一调用文本生成模型"""
+    """统一调用文本生成模型 (V2 - 增强错误处理)"""
     try:
         response = dashscope.Generation.call(model=model_name, prompt=prompt, temperature=temperature, result_format='message')
         if response.status_code == HTTPStatus.OK:
             return response.output.choices[0].message.content
         else:
-            print(f"API调用失败: Code: {response.code}, Message: {response.message}")
-            return f"抱歉，AI模型调用失败 (模型: {model_name})。错误信息: {response.message}"
+            # 打印更详细的API错误信息
+            error_message = f"API调用失败: Code: {response.code}, Message: {response.message}"
+            print(error_message)
+            return f"抱歉，AI模型调用失败 (模型: {model_name})。错误详情: {response.message}"
     except Exception as e:
-        print(f"网络或API异常: {e}")
-        return f"抱歉，与AI大脑连接时发生网络或API异常: {e}"
+        # 打印完整的堆栈跟踪信息，便于调试
+        # 使用 repr(e) 而不是 str(e) 来避免潜在的递归错误
+        error_details = repr(e)
+        print(f"在 call_text_model 中捕获到严重异常: {error_details}")
+        traceback.print_exc() # 打印完整的traceback到控制台
+        return f"抱歉，与AI大脑连接时发生网络或API异常，请稍后重试。错误类型: {type(e).__name__}"
 
 def call_image_model(prompt, model_name='wanx-v1'):
     """专门调用通义万相文生图模型"""
@@ -621,4 +628,8 @@ def chat_api():
         return jsonify({'text': f'服务器内部错误: {e}', 'imageUrl': None}), 500
 # --- 6. 启动应用 ---
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Render 会忽略这里的 port，因为它会通过环境变量注入自己的端口
+    # 保留 debug=True 有助于在部署初期查看 Render 日志中的详细错误
+    # 部署稳定后可以考虑改为 False
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
